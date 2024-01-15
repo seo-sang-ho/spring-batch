@@ -21,23 +21,22 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
+
 @Slf4j
 @Configuration
 public class Hello3JobConfig {
     @Bean
-    public Job hello2Job(JobRepository jobRepository, Step hello3Step1, Step hello3Step2, Step hello3Step3) {
+    public Job hello3Job(JobRepository jobRepository, Flow splitFlow, Step hello3Step3) {
         return new JobBuilder("hello3Job", jobRepository)
-                .start(hello3Step1)
-                .next(hello3Step2)
+                .start(splitFlow)
                 .next(hello3Step3)
-                .incrementer(new RunIdIncrementer())
+                .build()
                 .build();
     }
 
-    @JobScope
     @Bean
     public Step hello3Step1(JobRepository jobRepository, Tasklet hello3Step1Tasklet, PlatformTransactionManager platformTransactionManager) {
-        return new StepBuilder("hello3Step1Tasklet", jobRepository)
+        return new StepBuilder("hello3Step1", jobRepository)
                 .tasklet(hello3Step1Tasklet, platformTransactionManager)
                 .build();
     }
@@ -46,16 +45,14 @@ public class Hello3JobConfig {
     @Bean
     public Tasklet hello3Step1Tasklet() {
         return ((contribution, chunkContext) -> {
-            log.info("Hello World");
-            System.out.println("Hello World 3/1");
+            System.out.println("Hello World 3-1");
             return RepeatStatus.FINISHED;
         });
     }
 
-    @JobScope
     @Bean
     public Step hello3Step2(JobRepository jobRepository, Tasklet hello3Step2Tasklet, PlatformTransactionManager platformTransactionManager) {
-        return new StepBuilder("hello3Step2Tasklet", jobRepository)
+        return new StepBuilder("hello3Step2", jobRepository)
                 .tasklet(hello3Step2Tasklet, platformTransactionManager)
                 .build();
     }
@@ -64,8 +61,7 @@ public class Hello3JobConfig {
     @Bean
     public Tasklet hello3Step2Tasklet() {
         return ((contribution, chunkContext) -> {
-            log.info("Hello World");
-            System.out.println("Hello World 3/2");
+            System.out.println("Hello World 3-2");
             return RepeatStatus.FINISHED;
         });
     }
@@ -73,7 +69,7 @@ public class Hello3JobConfig {
     @JobScope
     @Bean
     public Step hello3Step3(JobRepository jobRepository, Tasklet hello3Step3Tasklet, PlatformTransactionManager platformTransactionManager) {
-        return new StepBuilder("hello3Step3Tasklet", jobRepository)
+        return new StepBuilder("hello3Step3", jobRepository)
                 .tasklet(hello3Step3Tasklet, platformTransactionManager)
                 .build();
     }
@@ -82,9 +78,30 @@ public class Hello3JobConfig {
     @Bean
     public Tasklet hello3Step3Tasklet() {
         return ((contribution, chunkContext) -> {
-            log.info("Hello World");
-            System.out.println("Hello World 3/3");
+            System.out.println("Hello World 3-3");
             return RepeatStatus.FINISHED;
         });
+    }
+
+    @Bean
+    public Flow splitFlow(Flow flow1, Flow flow2) {
+        return new FlowBuilder<SimpleFlow>("splitFlow")
+                .split(new SimpleAsyncTaskExecutor("spring_batch"))
+                .add(flow1, flow2)
+                .build();
+    }
+
+    @Bean
+    public Flow flow1(Step hello3Step1) {
+        return new FlowBuilder<SimpleFlow>("flow1")
+                .start(hello3Step1)
+                .build();
+    }
+
+    @Bean
+    public Flow flow2(Step hello3Step2) {
+        return new FlowBuilder<SimpleFlow>("flow2")
+                .start(hello3Step2)
+                .build();
     }
 }
