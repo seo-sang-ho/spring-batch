@@ -30,7 +30,7 @@ public class Hello3JobConfig {
         return new JobBuilder("hello3Job", jobRepository)
                 .start(splitFlow)
                 .next(hello3Step3)
-                .build()
+                .end()
                 .build();
     }
 
